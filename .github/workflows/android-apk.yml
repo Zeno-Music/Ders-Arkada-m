@@ -46,7 +46,8 @@ jobs:
           "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
           "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | tee apk-info.txt
           grep -F "package: name='com.dersarkadasim.app'" apk-info.txt
-          grep -F "application-label:'Ders Arkadaşım'" apk-info.txt
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump xmltree "$APK" AndroidManifest.xml | tee apk-manifest.txt
+          grep -F 'Ders Arkadaşım' apk-manifest.txt
           mkdir -p dist
           cp "$APK" dist/Ders-Arkadasim-debug.apk
           cd dist
