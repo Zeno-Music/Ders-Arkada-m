@@ -1,4 +1,3 @@
-
 name: Ders Arkadasim Android APK
 
 on:
@@ -6,9 +5,13 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
 
     steps:
       - name: Projeyi indir
@@ -20,24 +23,39 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-     
       - name: Android SDK kur
         uses: android-actions/setup-android@v3
         with:
-          packages: ''
-
+          packages: 'platform-tools platforms;android-35 build-tools;34.0.0'
+          log-accepted-android-sdk-licenses: false
 
       - name: Gradle kur
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.7'
+          # Android Gradle Plugin 8.7.3 requires Gradle 8.9 or newer.
+          gradle-version: '8.9'
 
-      - name: APK olustur
-        run: gradle :app:assembleDebug --no-daemon
+      - name: APK olustur ve kaynaklari kontrol et
+        run: gradle :app:assembleDebug :app:lintDebug --no-daemon --stacktrace
+
+      - name: APK imzasini ve paketini dogrula
+        shell: bash
+        run: |
+          APK=app/build/outputs/apk/debug/app-debug.apk
+          test -s "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/apksigner" verify --verbose "$APK"
+          "$ANDROID_HOME/build-tools/34.0.0/aapt" dump badging "$APK" | tee apk-info.txt
+          grep -F "package: name='com.dersarkadasim.app'" apk-info.txt
+          grep -F "application-label:'Ders Arkadaşım'" apk-info.txt
+          mkdir -p dist
+          cp "$APK" dist/Ders-Arkadasim-debug.apk
+          cd dist
+          sha256sum Ders-Arkadasim-debug.apk > SHA256SUMS.txt
 
       - name: APK dosyasini kaydet
         uses: actions/upload-artifact@v4
         with:
           name: DersArkadasim-APK
-          path: app/build/outputs/apk/debug/app-debug.apk
-          
+          path: dist/
+          if-no-files-found: error
+          retention-days: 30
