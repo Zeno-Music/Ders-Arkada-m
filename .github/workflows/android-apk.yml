@@ -20,8 +20,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
+     
       - name: Android SDK kur
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+
 
       - name: Gradle kur
         uses: gradle/actions/setup-gradle@v4
